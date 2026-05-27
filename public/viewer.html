@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mème Launcher — Viewer</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:#000}
+#screen{width:100vw;height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative}
+#waiting{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+#waiting .pulse-ring{width:60px;height:60px;border:2px solid #222;border-radius:50%;animation:ring 2s ease-in-out infinite}
+@keyframes ring{0%,100%{transform:scale(1);opacity:.5}50%{transform:scale(1.15);opacity:1}}
+#waiting .label{font-family:system-ui,sans-serif;font-size:14px;color:#333;letter-spacing:.05em}
+#room-tag{font-family:monospace;font-size:11px;color:#2a2a2a;position:absolute;bottom:16px;left:50%;transform:translateX(-50%)}
+#meme-display{display:none;flex-direction:column;align-items:center;justify-content:center;width:100%;height:100%;position:relative}
+#meme-emoji{font-size:20vw;text-align:center;line-height:1;animation:popIn .35s cubic-bezier(.34,1.56,.64,1)}
+#meme-img{max-width:80vw;max-height:65vh;object-fit:contain;border-radius:16px;animation:popIn .35s cubic-bezier(.34,1.56,.64,1)}
+#meme-caption{color:#fff;font-family:system-ui,sans-serif;font-size:4vw;font-weight:700;text-align:center;padding:0 5vw;margin-top:3vh;text-shadow:0 2px 20px rgba(0,0,0,.8);animation:slideUp .3s ease .1s both}
+#flash{position:fixed;inset:0;background:#fff;opacity:0;pointer-events:none;transition:opacity .05s}
+#shake-target{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center}
+@keyframes popIn{from{transform:scale(.1);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+@keyframes shake{0%,100%{transform:translate(0)}10%{transform:translate(-12px,-6px)}20%{transform:translate(12px,6px)}30%{transform:translate(-8px,4px)}40%{transform:translate(8px,-4px)}50%{transform:translate(-6px,2px)}60%{transform:translate(6px,-2px)}70%{transform:translate(-4px,4px)}80%{transform:translate(4px,-4px)}90%{transform:translate(-2px,2px)}}
+.do-shake{animation:shake .5s ease !important}
+</style>
+</head>
+<body>
+<div id="screen">
+  <div id="shake-target">
+    <div id="waiting">
+      <div class="pulse-ring"></div>
+      <div class="label">En attente d'un mème...</div>
+    </div>
+    <div id="meme-display">
+      <div id="meme-emoji"></div>
+      <img id="meme-img" style="display:none">
+      <div id="meme-caption"></div>
+    </div>
+  </div>
+  <div id="room-tag"></div>
+</div>
+<div id="flash"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const roomId = new URLSearchParams(location.search).get('room') || 'MEME-DEFAULT';
+document.getElementById('room-tag').textContent = roomId;
+socket.emit('join-room', { roomId, role: 'viewer' });
+
+const SOUNDS = {
+  airhorn: () => playTone([{ f:880,t:.05 },{ f:700,t:.05 },{ f:550,t:.1 },{ f:440,t:.3 }]),
+  vine:    () => playTone([{ f:80,t:.05 },{ f:60,t:.05 },{ f:40,t:.4 }], 'sawtooth'),
+  bruh:    () => playTone([{ f:220,t:.15 },{ f:180,t:.15 },{ f:140,t:.4 }], 'sine'),
+  fart:    () => playNoise(.5),
+};
+
+const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+function playTone(notes, type='square') {
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(.4, ctx.currentTime);
+  g.connect(ctx.destination);
+  let t = ctx.currentTime;
+  notes.forEach(({ f, t: dur }) => {
+    const o = ctx.createOscillator();
+    o.type = type;
+    o.frequency.setValueAtTime(f, t);
+    o.connect(g);
+    o.start(t); o.stop(t + dur);
+    t += dur;
+  });
+}
+
+function playNoise(dur) {
+  const buf = ctx.createBuffer(1, ctx.sampleRate * dur, ctx.sampleRate);
+  const data = buf.getChannelData(0);
+  for (let i = 0; i < data.length; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const filt = ctx.createBiquadFilter();
+  filt.type = 'bandpass';
+  filt.frequency.value = 300;
+  src.connect(filt);
+  filt.connect(ctx.destination);
+  src.start();
+}
+
+let hideTimer = null;
+
+socket.on('receive-meme', ({ meme, caption, isImage, sound }) => {
+  ctx.resume();
+  if (sound && SOUNDS[sound]) SOUNDS[sound]();
+
+  const waiting = document.getElementById('waiting');
+  const display = document.getElementById('meme-display');
+  const emojiEl = document.getElementById('meme-emoji');
+  const imgEl = document.getElementById('meme-img');
+  const capEl = document.getElementById('meme-caption');
+  const shakeEl = document.getElementById('shake-target');
+
+  waiting.style.display = 'none';
+  display.style.display = 'flex';
+
+  if (isImage) {
+    emojiEl.style.display = 'none';
+    imgEl.style.display = '';
+    imgEl.src = meme;
+    imgEl.style.animation = 'none';
+    void imgEl.offsetWidth;
+    imgEl.style.animation = '';
+  } else {
+    imgEl.style.display = 'none';
+    emojiEl.style.display = '';
+    emojiEl.textContent = meme;
+    emojiEl.style.animation = 'none';
+    void emojiEl.offsetWidth;
+    emojiEl.style.animation = 'popIn .35s cubic-bezier(.34,1.56,.64,1)';
+  }
+
+  capEl.textContent = caption || '';
+  capEl.style.animation = 'none';
+  void capEl.offsetWidth;
+  capEl.style.animation = caption ? 'slideUp .3s ease .1s both' : 'none';
+
+  const flash = document.getElementById('flash');
+  flash.style.opacity = '.6';
+  setTimeout(() => flash.style.opacity = '0', 80);
+
+  shakeEl.classList.remove('do-shake');
+  void shakeEl.offsetWidth;
+  shakeEl.classList.add('do-shake');
+  setTimeout(() => shakeEl.classList.remove('do-shake'), 500);
+
+  if (hideTimer) clearTimeout(hideTimer);
+  hideTimer = setTimeout(() => {
+    display.style.display = 'none';
+    waiting.style.display = 'flex';
+  }, 6000);
+});
+</script>
+</body>
+</html>

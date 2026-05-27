@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mème Launcher — Sender</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f0f13;color:#e0dff8;min-height:100vh;padding:20px}
+h1{font-size:18px;font-weight:600;color:#a89cf7;margin-bottom:4px}
+.sub{font-size:13px;color:#666;margin-bottom:20px}
+.room-bar{display:flex;align-items:center;gap:10px;background:#1a1a24;border:1px solid #2a2a3a;border-radius:10px;padding:10px 14px;margin-bottom:20px;flex-wrap:wrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#22c55e;flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.room-code{font-family:monospace;font-size:15px;font-weight:700;color:#a89cf7;letter-spacing:.08em}
+.copy-btn{margin-left:auto;background:transparent;border:1px solid #2a2a3a;border-radius:7px;color:#888;font-size:12px;padding:5px 10px;cursor:pointer;transition:all .15s}
+.copy-btn:hover{border-color:#a89cf7;color:#a89cf7}
+.viewers{font-size:12px;color:#555;display:flex;align-items:center;gap:5px}
+.section-title{font-size:11px;font-weight:600;color:#555;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.meme-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.meme-card{aspect-ratio:1;background:#1a1a24;border:2px solid transparent;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;font-size:32px;position:relative;overflow:hidden}
+.meme-card:hover{border-color:#534AB7;background:#1e1e2e}
+.meme-card.selected{border-color:#a89cf7;background:#1e1e2e}
+.meme-card .name{font-size:9px;color:#555;position:absolute;bottom:4px;text-align:center;width:100%}
+.meme-card.selected .name{color:#a89cf7}
+.upload-zone{border:1.5px dashed #2a2a3a;border-radius:10px;padding:14px;text-align:center;color:#555;font-size:13px;cursor:pointer;transition:all .15s;margin-bottom:16px}
+.upload-zone:hover{border-color:#534AB7;color:#a89cf7;background:#1a1a24}
+.upload-zone .icon{font-size:22px;margin-bottom:4px}
+.caption-wrap{margin-bottom:16px}
+.caption-input{width:100%;background:#1a1a24;border:1px solid #2a2a3a;border-radius:8px;padding:10px 12px;color:#e0dff8;font-size:14px;outline:none;transition:border .15s}
+.caption-input:focus{border-color:#7F77DD}
+.caption-input::placeholder{color:#444}
+.sounds{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.sound-btn{background:#1a1a24;border:1px solid #2a2a3a;border-radius:8px;padding:7px 12px;font-size:12px;color:#888;cursor:pointer;transition:all .15s;display:flex;align-items:center;gap:5px}
+.sound-btn:hover{border-color:#534AB7;color:#a89cf7}
+.sound-btn.active{border-color:#a89cf7;color:#a89cf7;background:#1e1e2e}
+.send-btn{width:100%;background:#534AB7;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.send-btn:hover:not(:disabled){background:#6B60D4;transform:translateY(-1px)}
+.send-btn:active:not(:disabled){transform:scale(.98)}
+.send-btn:disabled{opacity:.35;cursor:default}
+.history{margin-top:20px}
+.history-list{display:flex;flex-direction:column;gap:6px;max-height:150px;overflow-y:auto}
+.history-item{display:flex;align-items:center;gap:8px;background:#1a1a24;border-radius:8px;padding:8px 10px;font-size:13px;color:#888}
+.history-item .meme-icon{font-size:18px}
+.history-item .time{margin-left:auto;font-size:11px;color:#444;font-family:monospace}
+.feedback{position:fixed;bottom:20px;right:20px;background:#22c55e;color:#fff;font-size:13px;font-weight:600;padding:10px 18px;border-radius:10px;opacity:0;transform:translateY(10px);transition:all .3s;pointer-events:none}
+.feedback.show{opacity:1;transform:translateY(0)}
+.preview-img{width:100%;height:100%;object-fit:cover;border-radius:8px}
+</style>
+</head>
+<body>
+
+<h1>🚀 Mème Launcher</h1>
+<p class="sub">Envoie un mème sur l'écran de ton pote en temps réel</p>
+
+<div class="room-bar">
+  <span class="dot"></span>
+  <span style="font-size:13px;color:#666">Room :</span>
+  <span class="room-code" id="roomCode">—</span>
+  <button class="copy-btn" onclick="copyLink()">📋 Copier le lien du viewer</button>
+  <span class="viewers" id="viewersCount">👁 0 viewer</span>
+</div>
+
+<div class="section-title">Choisis un mème</div>
+<div class="meme-grid" id="memeGrid">
+  <div class="meme-card" onclick="selectMeme(this,'😂','Mort de rire')"><span>😂</span><div class="name">MDR</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'💀','Littéralement mort')"><span>💀</span><div class="name">Dead</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'🤡','Clown')"><span>🤡</span><div class="name">Clown</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'🫵','T\'es grillé')"><span>🫵</span><div class="name">Grillé</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'🐸','Feels bad')"><span>🐸</span><div class="name">Pepe</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'🤌','Chef')"><span>🤌</span><div class="name">Chef</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'😤','Angry')"><span>😤</span><div class="name">Angry</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'🦆','Canard')"><span>🦆</span><div class="name">Canard</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'🗿','Moai')"><span>🗿</span><div class="name">Moai</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'💅','No comment')"><span>💅</span><div class="name">Sass</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'👁️','Watching')"><span>👁️</span><div class="name">Watch</div></div>
+  <div class="meme-card" onclick="selectMeme(this,'🥴','Woozy')"><span>🥴</span><div class="name">Woozy</div></div>
+</div>
+
+<div class="upload-zone" onclick="document.getElementById('fileInput').click()">
+  <div class="icon">🖼️</div>
+  <div>Upload ton propre mème (image)</div>
+</div>
+<input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleUpload(event)">
+
+<div class="caption-wrap">
+  <input class="caption-input" id="caption" placeholder="Texte à afficher sur l'écran (optionnel)..." maxlength="80">
+</div>
+
+<div class="section-title">Son (mode troll 🔊)</div>
+<div class="sounds" id="sounds">
+  <button class="sound-btn" data-sound="" onclick="selectSound(this,'')">🔇 Silence</button>
+  <button class="sound-btn active" data-sound="airhorn" onclick="selectSound(this,'airhorn')">📯 Airhorn</button>
+  <button class="sound-btn" data-sound="vine" onclick="selectSound(this,'vine')">💥 Vine boom</button>
+  <button class="sound-btn" data-sound="bruh" onclick="selectSound(this,'bruh')">😑 Bruh</button>
+  <button class="sound-btn" data-sound="fart" onclick="selectSound(this,'fart')">💨 Pet</button>
+</div>
+
+<button class="send-btn" id="sendBtn" onclick="sendMeme()" disabled>
+  🚀 Envoyer le mème
+</button>
+
+<div class="history" id="historySection" style="display:none">
+  <div class="section-title" style="margin-top:0">Historique</div>
+  <div class="history-list" id="historyList"></div>
+</div>
+
+<div class="feedback" id="feedback">✅ Mème envoyé !</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const params = new URLSearchParams(location.search);
+let roomId = params.get('room');
+if (!roomId) {
+  roomId = 'MEME-' + Math.random().toString(36).slice(2,6).toUpperCase();
+  history.replaceState(null,'','?room='+roomId);
+}
+document.getElementById('roomCode').textContent = roomId;
+socket.emit('join-room', { roomId, role: 'sender' });
+
+socket.on('room-stats', (stats) => {
+  document.getElementById('viewersCount').textContent = '👁 ' + (stats.viewers||0) + ' viewer' + (stats.viewers !== 1 ? 's' : '');
+});
+
+let selected = null, selectedLabel = '', selectedIsImage = false;
+let activeSound = 'airhorn';
+
+function selectMeme(el, emoji, label) {
+  document.querySelectorAll('.meme-card').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  selected = emoji; selectedLabel = label; selectedIsImage = false;
+  document.getElementById('sendBtn').disabled = false;
+}
+
+function selectSound(el, sound) {
+  document.querySelectorAll('.sound-btn').forEach(b => b.classList.remove('active'));
+  el.classList.add('active');
+  activeSound = sound;
+}
+
+function handleUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    const grid = document.getElementById('memeGrid');
+    const card = document.createElement('div');
+    card.className = 'meme-card';
+    const name = file.name.split('.')[0].slice(0,8);
+    card.innerHTML = `<img class="preview-img" src="${ev.target.result}"><div class="name">${name}</div>`;
+    card.onclick = () => {
+      document.querySelectorAll('.meme-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selected = ev.target.result; selectedLabel = name; selectedIsImage = true;
+      document.getElementById('sendBtn').disabled = false;
+    };
+    grid.prepend(card);
+    card.onclick(null);
+  };
+  reader.readAsDataURL(file);
+}
+
+function sendMeme() {
+  if (!selected) return;
+  const caption = document.getElementById('caption').value;
+  socket.emit('send-meme', { roomId, meme: selected, caption, isImage: selectedIsImage, sound: activeSound });
+  const fb = document.getElementById('feedback');
+  fb.classList.add('show');
+  setTimeout(() => fb.classList.remove('show'), 2000);
+  document.getElementById('sendBtn').style.transform = 'scale(.96)';
+  setTimeout(() => document.getElementById('sendBtn').style.transform = '', 150);
+}
+
+socket.on('meme-sent', ({ meme, caption, isImage, ts }) => {
+  const list = document.getElementById('historyList');
+  document.getElementById('historySection').style.display = '';
+  const d = new Date(ts);
+  const t = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
+  const item = document.createElement('div');
+  item.className = 'history-item';
+  item.innerHTML = `<span class="meme-icon">${isImage ? '🖼️' : meme}</span><span>${isImage ? 'Image custom' : selectedLabel}${caption ? ' — '+caption : ''}</span><span class="time">${t}</span>`;
+  list.prepend(item);
+});
+
+function copyLink() {
+  const url = location.origin + '/viewer.html?room=' + roomId;
+  navigator.clipboard?.writeText(url).catch(()=>{});
+  const btn = event.currentTarget;
+  btn.textContent = '✅ Copié !';
+  setTimeout(() => btn.textContent = '📋 Copier le lien du viewer', 2000);
+}
+</script>
+</body>
+</html>
