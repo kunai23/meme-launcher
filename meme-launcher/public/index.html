@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mème Launcher</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,sans-serif;background:#0f0f13;color:#e0dff8;min-height:100vh;display:flex;align-items:center;justify-content:center}
+.card{background:#1a1a24;border:1px solid #2a2a3a;border-radius:16px;padding:32px;max-width:400px;width:100%;text-align:center}
+h1{font-size:28px;margin-bottom:8px}
+p{color:#666;font-size:14px;margin-bottom:28px;line-height:1.6}
+.btn{display:block;width:100%;padding:14px;border-radius:10px;font-size:15px;font-weight:600;cursor:pointer;text-decoration:none;border:none;margin-bottom:10px;transition:opacity .15s}
+.btn:hover{opacity:.85}
+.btn-sender{background:#534AB7;color:#fff}
+.btn-viewer{background:#1e1e2e;color:#a89cf7;border:1px solid #2a2a3a}
+.note{font-size:12px;color:#444;margin-top:16px}
+</style>
+</head>
+<body>
+<div class="card">
+  <div style="font-size:48px;margin-bottom:12px">🚀</div>
+  <h1>Mème Launcher</h1>
+  <p>Envoie des mèmes en live sur l'écran de ton pote en temps réel.</p>
+  <a class="btn btn-sender" href="/sender.html">😈 Je suis le sender (moi)</a>
+  <a class="btn btn-viewer" href="/viewer.html">👁 Je suis le viewer (mon pote)</a>
+  <p class="note">Le sender partage son lien viewer à son pote, et c'est parti !</p>
+</div>
+</body>
+</html>
