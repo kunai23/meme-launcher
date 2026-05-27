@@ -5,7 +5,9 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+const io = new Server(server, {
+  maxHttpBufferSize: 60 * 1024 * 1024
+});
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -17,21 +19,17 @@ io.on('connection', (socket) => {
     if (!rooms[roomId]) rooms[roomId] = { senders: 0, viewers: 0 };
     if (role === 'viewer') rooms[roomId].viewers++;
     if (role === 'sender') rooms[roomId].senders++;
-
     io.to(roomId).emit('room-stats', rooms[roomId]);
-    console.log(`[${role}] a rejoint la room ${roomId}`);
   });
 
-  socket.on('send-meme', ({ roomId, meme, caption, isImage, sound }) => {
-    socket.to(roomId).emit('receive-meme', { meme, caption, isImage, sound });
-    io.to(roomId).emit('meme-sent', { meme, caption, isImage, ts: Date.now() });
+  socket.on('send-meme', ({ roomId, meme, caption, type, sound, duration }) => {
+    socket.to(roomId).emit('receive-meme', { meme, caption, type, sound, duration });
+    io.to(roomId).emit('meme-sent', { meme, caption, type, ts: Date.now() });
   });
 
   socket.on('disconnecting', () => {
     for (const roomId of socket.rooms) {
-      if (rooms[roomId]) {
-        io.to(roomId).emit('room-stats', rooms[roomId]);
-      }
+      if (rooms[roomId]) io.to(roomId).emit('room-stats', rooms[roomId]);
     }
   });
 });
