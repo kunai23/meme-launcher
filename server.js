@@ -5,9 +5,7 @@ const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server, {
-  maxHttpBufferSize: 60 * 1024 * 1024
-});
+const io = new Server(server, { maxHttpBufferSize: 60 * 1024 * 1024 });
 
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -22,9 +20,13 @@ io.on('connection', (socket) => {
     io.to(roomId).emit('room-stats', rooms[roomId]);
   });
 
-  socket.on('send-meme', ({ roomId, meme, caption, type, sound, duration }) => {
-    socket.to(roomId).emit('receive-meme', { meme, caption, type, sound, duration });
-    io.to(roomId).emit('meme-sent', { meme, caption, type, ts: Date.now() });
+  socket.on('send-meme', ({ roomId, meme, caption, type, sound, duration, senderName }) => {
+    socket.to(roomId).emit('receive-meme', { meme, caption, type, sound, duration, senderName });
+    io.to(roomId).emit('meme-sent', { meme, caption, type, senderName, ts: Date.now() });
+  });
+
+  socket.on('stop-meme', ({ roomId }) => {
+    socket.to(roomId).emit('stop-meme');
   });
 
   socket.on('disconnecting', () => {
