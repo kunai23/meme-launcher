@@ -54,14 +54,26 @@ h1{font-size:18px;font-weight:600;color:#a89cf7;margin-bottom:4px}
 .range-wrap{display:flex;align-items:center;gap:10px;margin-bottom:16px;font-size:13px;color:#666}
 .range-wrap input[type=range]{flex:1;accent-color:#534AB7}
 .range-val{font-family:monospace;color:#a89cf7;min-width:36px;text-align:right}
-
-/* Position picker */
-.pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:130px;margin-bottom:16px}
-.pos-cell{aspect-ratio:1;background:#1a1a24;border:2px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:10px;color:#555}
+.pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;width:130px}
+.pos-cell{aspect-ratio:1;background:#1a1a24;border:2px solid transparent;border-radius:6px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;font-size:12px;color:#555}
 .pos-cell:hover{border-color:#534AB7}
-.pos-cell.selected{border-color:#a89cf7;background:#1e1e2e}
+.pos-cell.selected{border-color:#a89cf7;background:#1e1e2e;color:#a89cf7}
 .pos-section{display:flex;gap:16px;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap}
-.pos-label{font-size:11px;color:#555;margin-bottom:6px}
+
+/* TARGETS */
+.targets-wrap{background:#1a1a24;border:1px solid #2a2a3a;border-radius:10px;padding:12px;margin-bottom:16px}
+.targets-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.targets-title{font-size:12px;font-weight:600;color:#888}
+.targets-all{font-size:12px;color:#534AB7;cursor:pointer;background:none;border:none;color:#a89cf7}
+.target-list{display:flex;flex-direction:column;gap:8px}
+.target-item{display:flex;align-items:center;gap:10px;padding:7px 10px;background:#0f0f13;border-radius:8px;cursor:pointer;transition:background .15s;border:1px solid transparent}
+.target-item:hover{border-color:#2a2a3a}
+.target-item.checked{border-color:#534AB7}
+.target-check{width:16px;height:16px;border-radius:4px;border:1.5px solid #2a2a3a;background:#1a1a24;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .15s}
+.target-item.checked .target-check{background:#534AB7;border-color:#534AB7;color:#fff}
+.target-name{font-size:13px;color:#e0dff8;flex:1}
+.target-you{font-size:11px;color:#444;margin-left:4px}
+.no-users{font-size:12px;color:#444;text-align:center;padding:8px}
 
 .btn-row{display:flex;gap:8px;margin-bottom:16px}
 .send-btn{flex:1;background:#534AB7;color:#fff;border:none;border-radius:10px;padding:14px;font-size:15px;font-weight:600;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:8px}
@@ -91,12 +103,12 @@ h1{font-size:18px;font-weight:600;color:#a89cf7;margin-bottom:4px}
   <span class="dot"></span>
   <span style="font-size:13px;color:#666">Room :</span>
   <span class="room-code" id="roomCode">—</span>
-  <button class="copy-btn" onclick="copyLink()">📋 Lien viewer</button>
-  <span class="viewers" id="viewersCount">👁 0 viewer</span>
+  <button class="copy-btn" onclick="copyLink()">📋 Lien</button>
+  <span class="viewers" id="viewersCount">👁 0 connecté</span>
 </div>
 
 <div class="section-title">Ton pseudo</div>
-<input class="sender-name-input" id="senderName" placeholder="Entre ton pseudo..." maxlength="20" oninput="localStorage.setItem('senderName',this.value)">
+<input class="sender-name-input" id="senderName" placeholder="Entre ton pseudo..." maxlength="20" oninput="updateName(this.value)">
 
 <div class="tabs">
   <div class="tab active" onclick="switchTab('memes',this)">😂 Mèmes</div>
@@ -129,17 +141,17 @@ h1{font-size:18px;font-weight:600;color:#a89cf7;margin-bottom:4px}
 
 <!-- GIF -->
 <div id="tab-gif" style="display:none">
-  <div class="section-title">Colle une URL GIF directe (clic droit → copier l'adresse de l'image)</div>
+  <div class="section-title">Clic droit sur le GIF → Copier l'adresse de l'image</div>
   <input class="url-input" id="gifUrl" placeholder="https://media.tenor.com/.../nom.gif" oninput="previewGif(this.value)">
   <div class="gif-preview" id="gifPreview"><img id="gifThumb" src="" alt=""></div>
-  <button class="add-btn" id="gifAddBtn" onclick="addGifToGrid()" disabled>+ Ajouter et sauvegarder ce GIF</button>
+  <button class="add-btn" id="gifAddBtn" onclick="addGifToGrid()" disabled>+ Ajouter et sauvegarder</button>
   <div class="meme-grid" id="gifGrid"></div>
 </div>
 
 <!-- VIDEO -->
 <div id="tab-video" style="display:none">
   <div class="upload-zone" onclick="document.getElementById('vidInput').click()">
-    <div class="icon">🎬</div><div>Upload une vidéo MP4 (max 30MB pour la sauvegarde)</div>
+    <div class="icon">🎬</div><div>Upload une vidéo MP4</div>
   </div>
   <input type="file" id="vidInput" accept="video/mp4,video/webm" style="display:none" onchange="handleVidUpload(event)">
   <div class="meme-grid" id="vidGrid"></div>
@@ -169,24 +181,36 @@ h1{font-size:18px;font-weight:600;color:#a89cf7;margin-bottom:4px}
 
 <div class="range-wrap">
   <span>🔊 Volume</span>
-  <input type="range" min="0" max="100" value="80" step="5" id="volumeSlider" oninput="document.getElementById('volVal').textContent=this.value+'%';selectedVolume=parseInt(this.value)">
+  <input type="range" min="0" max="100" value="80" step="5" oninput="document.getElementById('volVal').textContent=this.value+'%';selectedVolume=parseInt(this.value)">
   <span class="range-val" id="volVal">80%</span>
 </div>
 
 <div class="pos-section">
   <div>
-    <div class="pos-label section-title">Position sur l'écran</div>
+    <div class="section-title">Position</div>
     <div class="pos-grid" id="posGrid">
-      <div class="pos-cell" data-pos="top-left"     onclick="selectPos(this,'top-left')">↖</div>
-      <div class="pos-cell" data-pos="top-center"   onclick="selectPos(this,'top-center')">↑</div>
-      <div class="pos-cell" data-pos="top-right"    onclick="selectPos(this,'top-right')">↗</div>
-      <div class="pos-cell" data-pos="mid-left"     onclick="selectPos(this,'mid-left')">←</div>
-      <div class="pos-cell selected" data-pos="center" onclick="selectPos(this,'center')">•</div>
-      <div class="pos-cell" data-pos="mid-right"    onclick="selectPos(this,'mid-right')">→</div>
-      <div class="pos-cell" data-pos="bot-left"     onclick="selectPos(this,'bot-left')">↙</div>
-      <div class="pos-cell" data-pos="bot-center"   onclick="selectPos(this,'bot-center')">↓</div>
-      <div class="pos-cell" data-pos="bot-right"    onclick="selectPos(this,'bot-right')">↘</div>
+      <div class="pos-cell" onclick="selectPos(this,'top-left')">↖</div>
+      <div class="pos-cell" onclick="selectPos(this,'top-center')">↑</div>
+      <div class="pos-cell" onclick="selectPos(this,'top-right')">↗</div>
+      <div class="pos-cell" onclick="selectPos(this,'mid-left')">←</div>
+      <div class="pos-cell selected" onclick="selectPos(this,'center')">•</div>
+      <div class="pos-cell" onclick="selectPos(this,'mid-right')">→</div>
+      <div class="pos-cell" onclick="selectPos(this,'bot-left')">↙</div>
+      <div class="pos-cell" onclick="selectPos(this,'bot-center')">↓</div>
+      <div class="pos-cell" onclick="selectPos(this,'bot-right')">↘</div>
     </div>
+  </div>
+</div>
+
+<!-- CIBLES -->
+<div class="section-title">Envoyer à</div>
+<div class="targets-wrap">
+  <div class="targets-header">
+    <span class="targets-title" id="targetsTitle">0 destinataire</span>
+    <button class="targets-all" onclick="toggleAll()">Tout sélectionner</button>
+  </div>
+  <div class="target-list" id="targetList">
+    <div class="no-users">En attente de connexions...</div>
   </div>
 </div>
 
@@ -209,14 +233,93 @@ const params = new URLSearchParams(location.search);
 let roomId = params.get('room');
 if (!roomId) { roomId = 'MEME-' + Math.random().toString(36).slice(2,6).toUpperCase(); history.replaceState(null,'','?room='+roomId); }
 document.getElementById('roomCode').textContent = roomId;
-socket.emit('join-room', { roomId, role: 'sender' });
 
-// Restore saved values
-document.getElementById('senderName').value = localStorage.getItem('senderName') || '';
+const savedName = localStorage.getItem('senderName') || '';
+document.getElementById('senderName').value = savedName;
 
-socket.on('room-stats', s => {
-  document.getElementById('viewersCount').textContent = '👁 ' + (s.viewers||0) + ' viewer' + (s.viewers!==1?'s':'');
+socket.emit('join-room', { roomId, role: 'sender', name: savedName || 'Anonyme' });
+
+function updateName(val) {
+  localStorage.setItem('senderName', val);
+  socket.emit('set-name', { name: val || 'Anonyme' });
+}
+
+let mySocketId = null;
+let roomUsers = []; // [{id, name, role}]
+let checkedIds = new Set();
+
+socket.on('connect', () => { mySocketId = socket.id; });
+
+socket.on('room-users', (users) => {
+  roomUsers = users;
+  renderTargets();
+  const count = users.filter(u => u.id !== mySocketId).length;
+  document.getElementById('viewersCount').textContent = '👁 ' + count + ' connecté' + (count > 1 ? 's' : '');
 });
+
+function renderTargets() {
+  const list = document.getElementById('targetList');
+  const others = roomUsers.filter(u => u.id !== mySocketId);
+
+  // Auto-check new users
+  others.forEach(u => { if (!checkedIds.has('unchecked_'+u.id)) checkedIds.add(u.id); });
+  // Remove disconnected
+  const ids = new Set(others.map(u => u.id));
+  for (const id of checkedIds) { if (!ids.has(id)) checkedIds.delete(id); }
+
+  if (others.length === 0) {
+    list.innerHTML = '<div class="no-users">En attente de connexions...</div>';
+    document.getElementById('targetsTitle').textContent = '0 destinataire';
+    return;
+  }
+
+  list.innerHTML = '';
+  others.forEach(u => {
+    const isChecked = checkedIds.has(u.id);
+    const item = document.createElement('div');
+    item.className = 'target-item' + (isChecked ? ' checked' : '');
+    item.dataset.id = u.id;
+    item.innerHTML = `<div class="target-check">${isChecked ? '✓' : ''}</div><div class="target-name">${u.name}</div>`;
+    item.onclick = () => toggleTarget(u.id, item);
+    list.appendChild(item);
+  });
+
+  updateTargetsTitle();
+}
+
+function toggleTarget(id, item) {
+  if (checkedIds.has(id)) {
+    checkedIds.delete(id);
+    checkedIds.add('unchecked_'+id);
+    item.classList.remove('checked');
+    item.querySelector('.target-check').textContent = '';
+  } else {
+    checkedIds.add(id);
+    checkedIds.delete('unchecked_'+id);
+    item.classList.add('checked');
+    item.querySelector('.target-check').textContent = '✓';
+  }
+  updateTargetsTitle();
+}
+
+function toggleAll() {
+  const others = roomUsers.filter(u => u.id !== mySocketId);
+  const allChecked = others.every(u => checkedIds.has(u.id));
+  others.forEach(u => {
+    if (allChecked) { checkedIds.delete(u.id); checkedIds.add('unchecked_'+u.id); }
+    else { checkedIds.add(u.id); checkedIds.delete('unchecked_'+u.id); }
+  });
+  renderTargets();
+}
+
+function updateTargetsTitle() {
+  const n = [...checkedIds].filter(id => !id.startsWith('unchecked_')).length;
+  document.getElementById('targetsTitle').textContent = n + ' destinataire' + (n > 1 ? 's' : '');
+}
+
+function getSelectedTargets() {
+  return [...checkedIds].filter(id => !id.startsWith('unchecked_'));
+}
 
 let selected=null, selectedLabel='', selectedType='emoji', selectedDuration=30, activeSound='airhorn', selectedPos='center', selectedVolume=80;
 
@@ -244,7 +347,6 @@ function selectPos(el, pos) {
   el.classList.add('selected'); selectedPos=pos;
 }
 
-// FAVORIS
 let favs = JSON.parse(localStorage.getItem('favs')||'[]');
 function toggleFav(e, btn, data, label, type, thumb) {
   e.stopPropagation();
@@ -268,11 +370,8 @@ function renderFavs() {
   });
 }
 
-// GIF — sauvegarde persistante
 let savedGifs = JSON.parse(localStorage.getItem('savedGifs')||'[]');
-function loadSavedGifs() {
-  savedGifs.forEach(g => addGifCard(g.url, g.label, false));
-}
+function loadSavedGifs() { savedGifs.forEach(g => addGifCard(g.url, g.label, false)); }
 function previewGif(url) {
   const btn=document.getElementById('gifAddBtn'), preview=document.getElementById('gifPreview');
   if (url.match(/\.(gif|webp)/i)||url.includes('tenor.com')||url.includes('giphy.com')) {
@@ -282,8 +381,7 @@ function previewGif(url) {
 function addGifToGrid() {
   const url=document.getElementById('gifUrl').value.trim(); if (!url) return;
   const label='GIF '+(savedGifs.length+1);
-  savedGifs.push({url,label});
-  localStorage.setItem('savedGifs', JSON.stringify(savedGifs));
+  savedGifs.push({url,label}); localStorage.setItem('savedGifs', JSON.stringify(savedGifs));
   addGifCard(url, label, true);
   document.getElementById('gifUrl').value='';
   document.getElementById('gifPreview').style.display='none';
@@ -293,34 +391,26 @@ function addGifToGrid() {
 function addGifCard(url, label, selectIt) {
   const grid=document.getElementById('gifGrid');
   const card=document.createElement('div'); card.className='meme-card';
-  card.innerHTML=`<img class="preview-gif" src="${url}"><div class="name">${label}</div><button class="del-btn" onclick="deleteGif(event,'${url}')">✕</button><button class="fav-btn" onclick="toggleFav(event,this,'${url}','${label}','gif','${url}')">★</button>`;
+  card.innerHTML=`<img class="preview-gif" src="${url}"><div class="name">${label}</div><button class="del-btn" onclick="deleteGif(event,'${url}')">✕</button>`;
   card.onclick=()=>selectMeme(card,url,label,'gif');
   grid.prepend(card);
   if (selectIt) card.onclick();
 }
 function deleteGif(e, url) {
   e.stopPropagation();
-  savedGifs = savedGifs.filter(g=>g.url!==url);
-  localStorage.setItem('savedGifs', JSON.stringify(savedGifs));
+  savedGifs=savedGifs.filter(g=>g.url!==url); localStorage.setItem('savedGifs', JSON.stringify(savedGifs));
   e.target.closest('.meme-card').remove();
 }
 
-// VIDEO — sauvegarde persistante
 let savedVideos = JSON.parse(localStorage.getItem('savedVideos')||'[]');
-function loadSavedVideos() {
-  savedVideos.forEach(v => addVideoCard(v.data, v.label, false));
-}
+function loadSavedVideos() { savedVideos.forEach(v => addVideoCard(v.data, v.label, false)); }
 function handleVidUpload(e) {
   const file=e.target.files[0]; if (!file) return;
   if (file.size>50*1024*1024) { alert('Max 50MB !'); return; }
   const reader=new FileReader();
   reader.onload=ev=>{
     const label=file.name.split('.')[0].slice(0,12);
-    try {
-      savedVideos.push({data:ev.target.result,label});
-      localStorage.setItem('savedVideos', JSON.stringify(savedVideos));
-      showFeedback('✅ Vidéo sauvegardée !','green');
-    } catch(err) { showFeedback('⚠️ Trop lourd pour sauvegarder','red'); }
+    try { savedVideos.push({data:ev.target.result,label}); localStorage.setItem('savedVideos', JSON.stringify(savedVideos)); showFeedback('✅ Vidéo sauvegardée !','green'); } catch(err) { showFeedback('⚠️ Trop lourd pour sauvegarder','red'); }
     addVideoCard(ev.target.result, label, true);
   };
   reader.readAsDataURL(file);
@@ -335,12 +425,9 @@ function addVideoCard(data, label, selectIt) {
 }
 function deleteVideo(e, label) {
   e.stopPropagation();
-  savedVideos = savedVideos.filter(v=>v.label!==label);
-  localStorage.setItem('savedVideos', JSON.stringify(savedVideos));
+  savedVideos=savedVideos.filter(v=>v.label!==label); localStorage.setItem('savedVideos', JSON.stringify(savedVideos));
   e.target.closest('.meme-card').remove();
 }
-
-// IMAGE upload
 function handleImgUpload(e) {
   const file=e.target.files[0]; if (!file) return;
   const reader=new FileReader();
@@ -348,7 +435,7 @@ function handleImgUpload(e) {
     const grid=document.getElementById('memeGrid');
     const card=document.createElement('div'); card.className='meme-card';
     const label=file.name.split('.')[0].slice(0,8);
-    card.innerHTML=`<img class="preview-img" src="${ev.target.result}"><div class="name">${label}</div><button class="fav-btn" onclick="toggleFav(event,this,'${ev.target.result}','${label}','image','${ev.target.result}')">★</button>`;
+    card.innerHTML=`<img class="preview-img" src="${ev.target.result}"><div class="name">${label}</div>`;
     card.onclick=()=>selectMeme(card,ev.target.result,label,'image');
     grid.prepend(card); card.onclick();
   };
@@ -357,16 +444,21 @@ function handleImgUpload(e) {
 
 function sendMeme() {
   if (!selected) return;
+  const targets = getSelectedTargets();
+  if (targets.length === 0) { showFeedback('⚠️ Sélectionne au moins un destinataire !','red'); return; }
   const caption=document.getElementById('caption').value;
   const senderName=document.getElementById('senderName').value.trim()||'Anonyme';
-  socket.emit('send-meme',{roomId,meme:selected,caption,type:selectedType,sound:activeSound,duration:selectedDuration,senderName,position:selectedPos,volume:selectedVolume});
-  showFeedback('✅ Envoyé !','green');
+  socket.emit('send-meme',{roomId,meme:selected,caption,type:selectedType,sound:activeSound,duration:selectedDuration,senderName,position:selectedPos,volume:selectedVolume,targets});
+  showFeedback('✅ Envoyé à '+targets.length+' pote'+(targets.length>1?'s':'')+'  !','green');
   addHistory();
 }
+
 function stopMeme() {
-  socket.emit('stop-meme',{roomId});
+  const targets = getSelectedTargets();
+  socket.emit('stop-meme',{roomId, targets});
   showFeedback('⏹ Coupé !','red');
 }
+
 function addHistory() {
   const list=document.getElementById('historyList');
   document.getElementById('historySection').style.display='';
@@ -376,18 +468,19 @@ function addHistory() {
   item.innerHTML=`<span>${icon}</span><span>${selectedLabel}</span><span class="time">${t}</span>`;
   list.prepend(item);
 }
+
 function showFeedback(msg,color) {
   const fb=document.getElementById('feedback');
   fb.textContent=msg; fb.className='feedback show '+color;
-  setTimeout(()=>fb.className='feedback',2000);
-}
-function copyLink() {
-  navigator.clipboard?.writeText(location.origin+'/viewer.html?room='+roomId).catch(()=>{});
-  const btn=event.currentTarget; btn.textContent='✅ Copié !';
-  setTimeout(()=>btn.textContent='📋 Lien viewer',2000);
+  setTimeout(()=>fb.className='feedback',2500);
 }
 
-// Init
+function copyLink() {
+  navigator.clipboard?.writeText(location.origin+'/sender.html?room='+roomId).catch(()=>{});
+  const btn=event.currentTarget; btn.textContent='✅ Copié !';
+  setTimeout(()=>btn.textContent='📋 Lien',2000);
+}
+
 loadSavedGifs();
 loadSavedVideos();
 </script>
